@@ -12,7 +12,5 @@ python-gdcm
 
 # for DICOM image processing
 pillow
-pytesseract
-nltk
 easyocr
 opencv-python

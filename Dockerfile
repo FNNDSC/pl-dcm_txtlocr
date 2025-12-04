@@ -7,7 +7,7 @@ LABEL org.opencontainers.image.authors="FNNDSC <dev@babyMRI.org>" \
       org.opencontainers.image.title="My ChRIS Plugin to detect text in DICOMs" \
       org.opencontainers.image.description="A ChRIS plugin to detect PHI containing text in a DICOMs"
 
-ARG SRCDIR=/usr/local/src/pl-phi_detector
+ARG SRCDIR=/usr/local/src/pl-dcm_txtlocr
 WORKDIR ${SRCDIR}
 
 COPY requirements.txt .
@@ -27,4 +27,4 @@ RUN pip install ".[${extras_require}]" \
     && cd / && rm -rf ${SRCDIR}
 WORKDIR /
 
-CMD ["phi_detector"]
+CMD ["dcm_txtlocr"]

@@ -19,18 +19,18 @@ def get_version(rel_path: str) -> str:
 
 
 setup(
-    name='phi_detector',
-    version=get_version('phi_detector.py'),
+    name='dcm_txtlocr',
+    version=get_version('dcm_txtlocr.py'),
     description='A ChRIS plugin to do something awesome',
     author='FNNDSC',
     author_email='dev@babyMRI.org',
-    url='https://github.com/FNNDSC/pl-phi_dete',
-    py_modules=['phi_detector'],
+    url='https://github.com/FNNDSC/pl-dcm_txtlocr',
+    py_modules=['dcm_txtlocr'],
     install_requires=['chris_plugin'],
     license='MIT',
     entry_points={
         'console_scripts': [
-            'phi_detector = phi_detector:main'
+            'dcm_txtlocr = dcm_txtlocr:main'
         ]
     },
     classifiers=[

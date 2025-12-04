@@ -4,6 +4,7 @@ pydicom
 pflog==1.2.26
 pftel-client~=1.0.6
 numpy==1.24.4
+
 # for bug fix on transfer syntax errors
 pylibjpeg
 pylibjpeg-libjpeg
@@ -13,3 +14,5 @@ python-gdcm
 pillow
 pytesseract
 nltk
+easyocr
+opencv-python

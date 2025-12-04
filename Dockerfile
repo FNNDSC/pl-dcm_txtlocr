@@ -1,19 +1,20 @@
 # Python version can be changed, e.g.
 FROM python:3.10
-# FROM ghcr.io/mamba-org/micromamba:1.5.1-focal-cuda-11.3.1
-#FROM docker.io/python:3.12.1-slim-bookworm
+
 
 LABEL org.opencontainers.image.authors="FNNDSC <dev@babyMRI.org>" \
-      org.opencontainers.image.title="My ChRIS Plugin to detect text in DICOMs" \
-      org.opencontainers.image.description="A ChRIS plugin to detect PHI containing text in a DICOMs"
+      org.opencontainers.image.title="My ChRIS Plugin to locate text in DICOMs" \
+      org.opencontainers.image.description="A ChRIS plugin to locate text in DICOM images and optionally detect PHI"
 
 ARG SRCDIR=/usr/local/src/pl-dcm_txtlocr
 WORKDIR ${SRCDIR}
 
-COPY requirements.txt .
-RUN --mount=type=cache,sharing=private,target=/root/.cache/pip pip install -r requirements.txt
 RUN apt-get update
 RUN apt-get install ffmpeg libsm6 libxext6  -y
+
+COPY requirements.txt .
+RUN --mount=type=cache,sharing=private,target=/root/.cache/pip pip install -r requirements.txt
+
 # Copy your preload script into the container
 COPY preload_model.py .
 

@@ -5,10 +5,7 @@ from argparse import ArgumentParser, Namespace, ArgumentDefaultsHelpFormatter
 from chris_plugin import chris_plugin, PathMapper
 import pydicom
 from PIL import Image
-import pytesseract
 import numpy as np
-import nltk
-from nltk import word_tokenize, pos_tag, ne_chunk
 import re
 import sys
 from loguru import logger
@@ -27,33 +24,30 @@ logger_format = (
 )
 logger.remove()
 logger.add(sys.stderr, format=logger_format)
+
 # Create a reader for specific languages
 reader = easyocr.Reader(['en'], gpu=False, quantize=True)  # ['en', 'fr', 'de', ...]
-phi_patterns = {
-        "SSN": r"\b\d{3}-\d{2}-\d{4}\b",
-        "Phone": r"\b(?:\+?1\s*[-.]?)?\(?\d{3}\)?[-.]?\s?\d{3}[-.]?\d{4}\b",
-        "Email": r"\b[\w.-]+@[\w.-]+\.\w+\b",
-        "Date (MM/DD/YYYY)": r"\b(0?[1-9]|1[0-2])/(0?[1-9]|[12]\d|3[01])/\d{4}\b",
-        "MRN": r"\b\d{6,7}\b",
-        "ZIP Code": r"\b\d{5}(?:-\d{4})?\b",
-        "IP Address": r"\b(?:\d{1,3}\.){3}\d{1,3}\b",
-    }
 
 __version__ = '1.0.4'
 
 DISPLAY_TITLE = r"""
-       _              _     _      _      _            _             
-      | |            | |   (_)    | |    | |          | |            
- _ __ | |______ _ __ | |__  _   __| | ___| |_ ___  ___| |_ ___  _ __ 
-| '_ \| |______| '_ \| '_ \| | / _` |/ _ \ __/ _ \/ __| __/ _ \| '__|
-| |_) | |      | |_) | | | | || (_| |  __/ ||  __/ (__| || (_) | |   
-| .__/|_|      | .__/|_| |_|_| \__,_|\___|\__\___|\___|\__\___/|_|   
-| |            | |         ______                                    
-|_|            |_|        |______|                                   
-"""
 
 
-parser = ArgumentParser(description='A ChRIS plugin to detect text in a DICOM file',
+         888             888                                888             888    888                          
+         888             888                                888             888    888                          
+         888             888                                888             888    888                          
+88888b.  888         .d88888  .d8888b 88888b.d88b.          888888 888  888 888888 888  .d88b.   .d8888b 888d888
+888 "88b 888        d88" 888 d88P"    888 "888 "88b         888    `Y8bd8P' 888    888 d88""88b d88P"    888P"  
+888  888 888 888888 888  888 888      888  888  888         888      X88K   888    888 888  888 888      888    
+888 d88P 888        Y88b 888 Y88b.    888  888  888         Y88b.  .d8""8b. Y88b.  888 Y88..88P Y88b.    888    
+88888P"  888         "Y88888  "Y8888P 888  888  888 88888888 "Y888 888  888  "Y888 888  "Y88P"   "Y8888P 888    
+888                                                                                                             
+888                                                                                                             
+888                                                                                                                                         
+""" + "\t\t -- version " + __version__ + " --\n\n"
+
+
+parser = ArgumentParser(description='A ChRIS plugin to locate text in a DICOM file',
                         formatter_class=ArgumentDefaultsHelpFormatter)
 parser.add_argument('-i', '--inspectTags',nargs="?", default=None, const="", type=str,
                     help='Comma separated DICOM tags')

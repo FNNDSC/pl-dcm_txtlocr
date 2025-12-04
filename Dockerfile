@@ -13,12 +13,12 @@ WORKDIR ${SRCDIR}
 COPY requirements.txt .
 RUN --mount=type=cache,sharing=private,target=/root/.cache/pip pip install -r requirements.txt
 RUN apt-get update
-RUN apt-get install ffmpeg libsm6 libxext6 tesseract-ocr  -y
-# Copy your downloader script into the container
-COPY nltk_downloader.py .
+RUN apt-get install ffmpeg libsm6 libxext6  -y
+# Copy your preload script into the container
+COPY preload_model.py .
 
-# Download NLTK resources
-RUN python nltk_downloader.py
+# Preload easyocr models
+RUN python preload_model.py
 
 
 COPY . .

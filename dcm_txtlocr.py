@@ -3,12 +3,16 @@
 from pathlib import Path
 from argparse import ArgumentParser, Namespace, ArgumentDefaultsHelpFormatter
 from chris_plugin import chris_plugin, PathMapper
-import pydicom
+from pydicom.dataset import Dataset
+from pydicom.sequence import Sequence
+from datetime import datetime
 from PIL import Image
+from difflib import SequenceMatcher
+from loguru import logger
 import numpy as np
+import pydicom
 import re
 import sys
-from loguru import logger
 import easyocr
 import cv2
 
@@ -25,10 +29,7 @@ logger_format = (
 logger.remove()
 logger.add(sys.stderr, format=logger_format)
 
-# Create a reader for specific languages
-reader = easyocr.Reader(['en'], gpu=False, quantize=True)  # ['en', 'fr', 'de', ...]
-
-__version__ = '1.0.4'
+__version__ = '1.0.5'
 
 DISPLAY_TITLE = r"""
 
@@ -57,6 +58,8 @@ parser.add_argument('-f', '--fileFilter', default='dcm', type=str,
                     help='input file filter glob')
 parser.add_argument('-t', '--outputType', default='dcm', type=str,
                     help='output file type(extension only)')
+parser.add_argument('-u', '--useGpu', default=False, action="store_true",
+                    help='If specified, use available gpu')
 
 
 # The main function of this *ChRIS* plugin is denoted by this ``@chris_plugin`` "decorator."
@@ -83,19 +86,14 @@ def main(options: Namespace, inputdir: Path, outputdir: Path):
     """
 
     print(DISPLAY_TITLE)
+    # Create a reader for specific languages
+    reader = easyocr.Reader(['en'], gpu=options.useGpu, quantize=True)  # ['en', 'fr', 'de', ...]
 
-    # Typically it's easier to think of programs as operating on individual files
-    # rather than directories. The helper functions provided by a ``PathMapper``
-    # object make it easy to discover input files and write to output files inside
-    # the given paths.
-    #
-    # Refer to the documentation for more options, examples, and advanced uses e.g.
-    # adding a progress bar and parallelism.
     mapper = PathMapper.file_mapper(inputdir, outputdir, glob=f"**/*.{options.fileFilter}",fail_if_empty=False)
-    logger.info(f"Total no. of files are {len(mapper)}")
+    print(f"Total no. of file(s) found: {len(mapper)} ")
     for input_file, output_file in mapper:
         # Read each input file from the input directory that matches the input filter specified
-        dcm_img = read_input_dicom(input_file, options.inspectTags)
+        dcm_img = read_input_dicom(input_file, reader, options.inspectTags)
 
         # check if a valid image file is returned
         if dcm_img is None:
@@ -108,7 +106,7 @@ def main(options: Namespace, inputdir: Path, outputdir: Path):
             save_as_image(dcm_img, output_file, options.outputType)
         print("\n\n")
         
-def read_input_dicom(input_file_path, tags):
+def read_input_dicom(input_file_path, reader, tags):
     """
     1) Read an input dicom file
     """
@@ -143,14 +141,19 @@ def read_input_dicom(input_file_path, tags):
         """
     if extracted_text:
         print(f"Extracted Text: {extracted_text}\n")
-        tokens = tokenize_strings(extracted_text)
+        return ds
+        # if tags is None:
+        #    return None
 
-        if tags is not None and detect_phi(tokens, ds, tags):
-            return None  # PHI detected
-        return ds  # Text exists but no PHI detected or tag is None
+        # tokens = tokenize_strings(extracted_text)
+
+        # if detect_phi(tokens, ds, tags):
+        #     return None  # PHI detected
+        #return ds  # Text exists but no PHI detected or tag is None
 
     # No extracted text → keep dataset
-    return ds
+    # return ds
+    return None
 
 def convert_image(img):
     # Normalize pixel values (optional but recommended for CT/MRI)
@@ -163,6 +166,7 @@ def convert_image(img):
         img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
 
     return img
+
 def _dicom_to_image(ds):
     pixel_array = ds.pixel_array  # This is usually a NumPy array
 
@@ -180,8 +184,6 @@ def _dicom_to_image(ds):
     # Convert to PIL Image
     image = Image.fromarray(pixel_array)
     return image
-
-from difflib import SequenceMatcher
 
 def similarity(a, b):
     """Returns a similarity ratio between 0 and 1."""
@@ -238,12 +240,6 @@ def save_as_image(dcm_file, output_file_path, file_ext):
         pixel_array_numpy = convert_color_space(pixel_array_numpy, "YBR_FULL", "RGB")
 
     cv2.imwrite(output_file_path,cv2.cvtColor(pixel_array_numpy,cv2.COLOR_RGB2BGR))
-
-
-import pydicom
-from pydicom.dataset import Dataset
-from pydicom.sequence import Sequence
-from datetime import datetime
 
 
 def extract_text_and_dates(ds: Dataset, tags=None):
@@ -358,14 +354,12 @@ def extract_text_and_dates(ds: Dataset, tags=None):
     return tokenize_strings(results)
 
 
-import re
 
 
 def tokenize_strings(strings):
     """
     Tokenizes a list or set of strings into a flat list of words.
 
-    - Removes punctuation
     - Lowercases all text
     - Splits on whitespace
     """

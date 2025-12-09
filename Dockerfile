@@ -1,7 +1,6 @@
 # Python version can be changed, e.g.
 FROM python:3.10
 
-
 LABEL org.opencontainers.image.authors="FNNDSC <dev@babyMRI.org>" \
       org.opencontainers.image.title="My ChRIS Plugin to locate text in DICOMs" \
       org.opencontainers.image.description="A ChRIS plugin to locate text in DICOM images and optionally detect PHI"
@@ -15,11 +14,13 @@ RUN apt-get install ffmpeg libsm6 libxext6  -y
 COPY requirements.txt .
 RUN --mount=type=cache,sharing=private,target=/root/.cache/pip pip install -r requirements.txt
 
+ENV EASYOCR_MODEL_PATH=/opt/easyocr_models
+
 # Copy your preload script into the container
 COPY preload_model.py .
 
 # Preload easyocr models
-RUN python preload_model.py
+RUN mkdir -p /opt/easyocr_models &&  python preload_model.py
 
 
 COPY . .

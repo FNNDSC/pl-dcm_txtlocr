@@ -29,7 +29,7 @@ logger_format = (
 logger.remove()
 logger.add(sys.stderr, format=logger_format)
 
-__version__ = '1.0.6'
+__version__ = '1.0.7'
 
 DISPLAY_TITLE = r"""
 
@@ -156,14 +156,46 @@ def read_input_dicom(input_file_path, reader, tags):
     return None
 
 def convert_image(img):
-    # Normalize pixel values (optional but recommended for CT/MRI)
+    """
+    Safely convert a DICOM pixel array to a valid RGB uint8 image
+    suitable for EasyOCR.
+    """
+
+    # 1. Validate pixel data
+    if img is None:
+        raise ValueError("convert_image: input image is None")
+
+    if not hasattr(img, "shape") or len(img.shape) == 0:
+        raise ValueError(f"convert_image: invalid image shape: {img}")
+
+    # 2. Handle multi-frame DICOMs (take first frame)
+    # Many MRIs/ultrasounds come as (N, H, W)
+    if len(img.shape) == 3 and img.shape[0] > 3 and img.ndim == 3:
+        # Probably (frames, H, W)
+        img = img[0]
+
+    # 3. Ensure image is 2D or 3D
+    if len(img.shape) not in (2, 3):
+        raise ValueError(f"convert_image: unexpected dimensions {img.shape}")
+
+    # 4. Convert to float32 for normalization
     img = img.astype(np.float32)
-    img = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX)
+
+    # Avoid normalize() on constant or empty images
+    if img.max() == img.min():
+        img = np.zeros_like(img, dtype=np.uint8)
+    else:
+        img = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX)
+
     img = img.astype(np.uint8)
 
-    # If grayscale → convert to RGB
-    if len(img.shape) == 2:
+    # 5. Ensure RGB
+    if len(img.shape) == 2:  # grayscale
         img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
+
+    # 6. If 3D but has 4+ channels → reduce to 3
+    if len(img.shape) == 3 and img.shape[2] > 3:
+        img = img[:, :, :3]
 
     return img
 

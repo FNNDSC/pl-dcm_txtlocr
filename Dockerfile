@@ -15,7 +15,10 @@ COPY requirements.txt .
 RUN --mount=type=cache,sharing=private,target=/root/.cache/pip pip install -r requirements.txt
 
 # EasyOCR model cache location
-ENV EASY_OCR_MODEL_DIR=/root/.EasyOCR
+ENV EASY_OCR_MODEL_DIR=/opt/easyocr
+
+# Create model directory with open permissions
+RUN mkdir -p /opt/easyocr && chmod -R a+rX /opt/easyocr
 
 # Copy your preload script into the container
 COPY preload_model.py .

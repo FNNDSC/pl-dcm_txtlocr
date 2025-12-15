@@ -3,7 +3,7 @@ import easyocr
 import logging
 import os
 
-MODEL_DIR = "/root/.EasyOCR"
+MODEL_DIR = "/opt/easyocr"
 
 os.makedirs(MODEL_DIR, exist_ok=True)
 

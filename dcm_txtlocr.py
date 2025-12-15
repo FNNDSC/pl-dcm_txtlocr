@@ -33,7 +33,7 @@ logger_format = (
 logger.remove()
 logger.add(sys.stderr, format=logger_format)
 
-__version__ = '1.1.1'
+__version__ = '1.1.2'
 
 DISPLAY_TITLE = r"""
 
@@ -92,7 +92,7 @@ def main(options: Namespace, inputdir: Path, outputdir: Path):
     print(DISPLAY_TITLE)
     # Create a reader for specific languages
     reader = easyocr.Reader(['en'],
-                            model_storage_directory='/root/.EasyOCR',
+                            model_storage_directory='/opt/easyocr',
                             download_enabled=False,
                             gpu=options.useGpu,
                             quantize=True,

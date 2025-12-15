@@ -29,7 +29,7 @@ logger_format = (
 logger.remove()
 logger.add(sys.stderr, format=logger_format)
 
-__version__ = '1.0.9'
+__version__ = '1.2.0'
 
 DISPLAY_TITLE = r"""
 
@@ -152,16 +152,32 @@ def save_as_text_file(text, op_dir, output_file_path):
         text_file.write(" ".join(text))
 
 def convert_image(img):
-    # Normalize pixel values (optional but recommended for CT/MRI)
     img = img.astype(np.float32)
-    img = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX)
+
+    # Replace NaN / Inf
+    img = np.nan_to_num(img, nan=0.0, posinf=0.0, neginf=0.0)
+
+    min_val = img.min()
+    max_val = img.max()
+
+    if max_val > min_val:
+        img = (img - min_val) / (max_val - min_val)
+        img = img * 255.0
+    else:
+        # Flat image → zero image
+        img = np.zeros_like(img)
+
     img = img.astype(np.uint8)
 
-    # If grayscale → convert to RGB
-    if len(img.shape) == 2:
+    # Grayscale → RGB
+    if img.ndim == 2:
         img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
 
+    # Ensure contiguous memory (IMPORTANT for EasyOCR)
+    img = np.ascontiguousarray(img)
+
     return img
+
 
 def save_dicom(dicom_file, output_path):
     """

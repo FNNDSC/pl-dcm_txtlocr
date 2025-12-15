@@ -15,6 +15,10 @@ import re
 import sys
 import easyocr
 import cv2
+import logging
+
+# supress ocr noise
+logging.getLogger('easyocr').setLevel(logging.ERROR)
 
 LOG = logger.debug
 
@@ -29,7 +33,7 @@ logger_format = (
 logger.remove()
 logger.add(sys.stderr, format=logger_format)
 
-__version__ = '1.1.0'
+__version__ = '1.1.1'
 
 DISPLAY_TITLE = r"""
 
@@ -87,7 +91,12 @@ def main(options: Namespace, inputdir: Path, outputdir: Path):
 
     print(DISPLAY_TITLE)
     # Create a reader for specific languages
-    reader = easyocr.Reader(['en'], gpu=options.useGpu, quantize=True)  # ['en', 'fr', 'de', ...]
+    reader = easyocr.Reader(['en'],
+                            model_storage_directory='/root/.EasyOCR',
+                            download_enabled=False,
+                            gpu=options.useGpu,
+                            quantize=True,
+                            verbose=False)  # ['en', 'fr', 'de', ...]
 
     mapper = PathMapper.file_mapper(inputdir, outputdir, glob=f"**/*.{options.fileFilter}",fail_if_empty=False)
     logger.info(f"Total no. of file(s) found: {len(mapper)} ")

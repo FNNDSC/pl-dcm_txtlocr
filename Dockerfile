@@ -14,13 +14,14 @@ RUN apt-get install ffmpeg libsm6 libxext6  -y
 COPY requirements.txt .
 RUN --mount=type=cache,sharing=private,target=/root/.cache/pip pip install -r requirements.txt
 
-ENV EASYOCR_MODEL_PATH=/opt/easyocr_models
+# EasyOCR model cache location
+ENV EASY_OCR_MODEL_DIR=/root/.EasyOCR
 
 # Copy your preload script into the container
 COPY preload_model.py .
 
 # Preload easyocr models
-RUN mkdir -p /opt/easyocr_models &&  python preload_model.py
+RUN python preload_model.py
 
 
 COPY . .

@@ -33,7 +33,7 @@ logger_format = (
 logger.remove()
 logger.add(sys.stderr, format=logger_format)
 
-__version__ = '1.1.2'
+__version__ = '1.1.3'
 
 DISPLAY_TITLE = r"""
 
@@ -122,9 +122,10 @@ def main(options: Namespace, inputdir: Path, outputdir: Path):
 
 def extract_text_from_image(reader, ds) -> str:
     rgb_img = convert_image(ds.pixel_array)
+    thumbnail_img = ocr_thumbnail(rgb_img)
 
     # Run OCR
-    extracted_text = reader.readtext(rgb_img,
+    extracted_text = reader.readtext(thumbnail_img,
                                      detail=0,
                                      paragraph=False,
                                      contrast_ths=0.05,  # lower makes it more sensitive
@@ -161,6 +162,30 @@ def save_as_text_file(text, op_dir, output_file_path):
         text_file.write(" ".join(text))
 
 def convert_image(img):
+    if img is None:
+        raise ValueError("Input image is None")
+
+    if not isinstance(img, np.ndarray):
+        raise TypeError(f"Expected numpy array, got {type(img)}")
+
+    if img.size == 0:
+        raise ValueError("Empty image array")
+
+    # -------------------------
+    # HANDLE MULTI-FRAME DICOM
+    # -------------------------
+    # Grayscale: (N, H, W)
+    if img.ndim == 3 and img.shape[-1] != 3:
+        frame_idx = img.shape[0] // 2
+        img = img[frame_idx]
+
+    # RGB: (N, H, W, 3)
+    elif img.ndim == 4 and img.shape[-1] == 3:
+        frame_idx = img.shape[0] // 2
+        img = img[frame_idx]
+
+    # After this point, img is 2D or 3D (H,W[,3])
+
     img = img.astype(np.float32)
 
     # Replace NaN / Inf
@@ -173,7 +198,6 @@ def convert_image(img):
         img = (img - min_val) / (max_val - min_val)
         img = img * 255.0
     else:
-        # Flat image → zero image
         img = np.zeros_like(img)
 
     img = img.astype(np.uint8)
@@ -182,10 +206,48 @@ def convert_image(img):
     if img.ndim == 2:
         img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
 
-    # Ensure contiguous memory (IMPORTANT for EasyOCR)
+    # (H, W, 1) → RGB
+    elif img.ndim == 3 and img.shape[2] == 1:
+        img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
+
+    # Ensure contiguous memory
     img = np.ascontiguousarray(img)
 
     return img
+
+def ocr_thumbnail(
+    img,
+    max_dim=1024,        # upper bound (memory / speed)
+    min_dim=600          # lower bound (text legibility)
+):
+    """
+    Create OCR-optimized thumbnail from grayscale or RGB image.
+    """
+
+    # Ensure grayscale (EasyOCR prefers this anyway)
+    if img.ndim == 3:
+        img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+
+    h, w = img.shape[:2]
+
+    # Scale so longest side == max_dim
+    scale = max_dim / max(h, w)
+
+    # But don't go too small
+    if min(h, w) * scale < min_dim:
+        scale = min_dim / min(h, w)
+
+    # Clamp scale to 1.0 (no upscaling)
+    scale = min(scale, 1.0)
+
+    if scale < 1.0:
+        img = cv2.resize(
+            img,
+            (int(w * scale), int(h * scale)),
+            interpolation=cv2.INTER_AREA
+        )
+
+    return np.ascontiguousarray(img, dtype=np.uint8)
 
 
 def save_dicom(dicom_file, output_path):

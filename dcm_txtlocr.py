@@ -16,9 +16,12 @@ import sys
 import easyocr
 import cv2
 import logging
+import os
 
 # supress ocr noise
 logging.getLogger('easyocr').setLevel(logging.ERROR)
+
+os.environ["TORCH_USE_NNPACK"] = "0"
 
 LOG = logger.debug
 
@@ -33,7 +36,7 @@ logger_format = (
 logger.remove()
 logger.add(sys.stderr, format=logger_format)
 
-__version__ = '1.1.4'
+__version__ = '1.1.5'
 
 DISPLAY_TITLE = r"""
 

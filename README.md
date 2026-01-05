@@ -1,30 +1,31 @@
-# My ChRIS Plugin
+# A Text Locater Plugin
 
 [![Version](https://img.shields.io/docker/v/fnndsc/pl-dcm_txtlocr?sort=semver)](https://hub.docker.com/r/fnndsc/pl-dcm_txtlocr)
 [![MIT License](https://img.shields.io/github/license/fnndsc/pl-dcm_txtlocr)](https://github.com/FNNDSC/pl-dcm_txtlocr/blob/main/LICENSE)
 [![ci](https://github.com/FNNDSC/pl-dcm_txtlocr/actions/workflows/ci.yml/badge.svg)](https://github.com/FNNDSC/pl-dcm_txtlocr/actions/workflows/ci.yml)
 
-`pl-dcm_txtlocr` is a [_ChRIS_](https://chrisproject.org/)
-_ds_ plugin which takes in ...  as input files and
-creates ... as output files.
+`pl-dcm_txtlocr` is a [_ChRIS_](https://chrisproject.org/) _ds_ plugin which **locates text in DICOM files** and saves it to a specified output directory. It can optionally use GPU acceleration if available.
+
+---
 
 ## Abstract
 
-...
+This plugin processes DICOM files, extracts text present in the pixel data of a DICOM file, and creates output files in the desired format. It is designed to work on local machines or inside a ChRIS pipeline and supports GPU acceleration for faster text extraction.
+
+---
 
 ## Installation
 
-`pl-dcm_txtlocr` is a _[ChRIS](https://chrisproject.org/) plugin_, meaning it can
-run from either within _ChRIS_ or the command-line.
+`pl-dcm_txtlocr` is a _[ChRIS](https://chrisproject.org/) plugin_, meaning it can run either inside ChRIS or from the command line using container technologies like [Apptainer](https://apptainer.org/).
+
+---
 
 ## Local Usage
 
-To get started with local command-line usage, use [Apptainer](https://apptainer.org/)
-(a.k.a. Singularity) to run `pl-dcm_txtlocr` as a container:
+Run locally with Apptainer:
 
-```shell
+```bash
 apptainer exec docker://fnndsc/pl-dcm_txtlocr dcm_txtlocr [--args values...] input/ output/
-```
 
 To print its available options, run:
 
@@ -40,8 +41,19 @@ First, create the input directory and move input data into it.
 
 ```shell
 mkdir incoming/ outgoing/
-mv some.dat other.dat incoming/
-apptainer exec docker://fnndsc/pl-dcm_txtlocr:latest dcm_txtlocr [--args] incoming/ outgoing/
+mv *.dcm incoming/
+
+apptainer exec docker://fnndsc/pl-dcm_txtlocr:latest dcm_txtlocr incoming/ outgoing/
+
+```
+### Using Optional Arguments
+```shell
+apptainer exec docker://fnndsc/pl-dcm_txtlocr:latest dcm_txtlocr \
+    -o text_output \
+    -f "*.dcm" \
+    -t "txt" \
+    -u \
+    incoming/ outgoing/
 ```
 
 ## Development
